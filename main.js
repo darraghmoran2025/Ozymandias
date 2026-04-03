@@ -270,17 +270,14 @@ let blowawayInProgress = false;
 function resetAndReveal() {
   cancelReveal();
   const container = document.getElementById('poem-container');
-  const lines = container.querySelectorAll('.poem-line');
-  lines.forEach(el => {
+  container.querySelectorAll('.poem-line').forEach(el => {
     el.classList.remove('reveal');
-    el.style.animation = 'none';
+    el.style.animation  = '';
+    el.style.opacity    = '';
+    el.style.transform  = '';
   });
-  void container.offsetHeight;
-  lines.forEach(el => {
-    el.classList.add('reveal');
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-  });
+  void container.offsetHeight; // force reflow so CSS animations restart cleanly
+  animateLines(container);
 }
 
 function blowawayAndToggle() {
