@@ -136,7 +136,7 @@ function buildCracks() {
 
 // ── Particles ──────────────────────────────────────────────────────────
 const dust = [], burst = [], gust = [], rubble = [];
-let gustActive = false;
+let gustActive = false, gustSpawningDone = false;
 
 function initDust() {
   dust.length = 0;
@@ -170,10 +170,11 @@ function triggerBurst() {
 
 function triggerGust() {
   gustActive = true;
+  gustSpawningDone = false;
   let batch = 0;
   const iv = setInterval(() => {
     for (let i = 0; i < 20; i++) {
-      const speed = 9 + Math.random() * 9; // faster: 9–18 px/frame
+      const speed = 9 + Math.random() * 9; // 9–18 px/frame
       gust.push({
         x:      -(20 + Math.random() * 140),
         y:      Math.random() * H,
@@ -183,7 +184,7 @@ function triggerGust() {
         baseOp: 0.15 + Math.random() * 0.4,
       });
     }
-    if (++batch >= 20) clearInterval(iv);
+    if (++batch >= 20) { clearInterval(iv); gustSpawningDone = true; }
   }, 100);
 }
 
@@ -318,36 +319,26 @@ function drawChunk(c) {
 
 function drawInscription() {
   ctx.save();
+  ctx.font = 'bold 13px Georgia, serif';
+  ctx.letterSpacing = '0px';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const maxW   = SHAFT_W - 20; // 10 px padding each side
-  const baseFs = 13;
+  // Pass maxWidth to fillText — the browser compresses text that exceeds it.
+  // This is the only reliable cross-browser way to guarantee text stays inside the shaft.
+  const maxW = SHAFT_W - 12;
 
   INSCRIPTION.forEach((line, li) => {
     const ci = INSC_OFFSET + li;
     if (activeCourses.has(ci)) return;
     const ly = shaftTop + ci * courseH + courseH / 2;
 
-    // Measure at base size with no letter-spacing to get true minimum width
-    ctx.font = `bold ${baseFs}px Georgia, serif`;
-    ctx.letterSpacing = '0px';
-    const measured = ctx.measureText(line).width;
-
-    if (measured <= maxW) {
-      // Fits — add modest letter spacing for carved look
-      ctx.letterSpacing = `${((maxW - measured) / (line.length + 1)).toFixed(1)}px`;
-    } else {
-      // Too wide — scale font down, keep spacing at 0
-      ctx.font = `bold ${Math.floor(baseFs * maxW / measured)}px Georgia, serif`;
-    }
-
     // Deep incised shadow
     ctx.fillStyle = 'rgba(14,4,1,0.95)';
-    ctx.fillText(line, cx + 1.2, ly + 1.2);
-    // Carved stone surface — bright highlight
+    ctx.fillText(line, cx + 1.2, ly + 1.2, maxW);
+    // Carved stone surface
     ctx.fillStyle = 'rgba(242,218,182,0.9)';
-    ctx.fillText(line, cx, ly);
+    ctx.fillText(line, cx, ly, maxW);
   });
   ctx.restore();
 }
@@ -520,7 +511,7 @@ function loop(now) {
   drawAftermathLines(now);
 
   // Once all gust particles have swept off screen, return to the main page
-  if (gustActive && gust.length === 0 && !navDone) {
+  if (gustActive && gustSpawningDone && gust.length === 0 && !navDone) {
     navDone = true;
     setTimeout(() => { window.location.href = 'index.html'; }, 700);
   }
@@ -537,6 +528,7 @@ window.addEventListener('resize', () => {
     crumbleGo = false;
     pillarA   = 0;
     gustActive = false;
+    gustSpawningDone = false;
     navDone   = false;
     lineStarts[0] = lineStarts[1] = lineStarts[2] = 0;
     burst.length = rubble.length = gust.length = 0;
