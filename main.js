@@ -279,13 +279,17 @@ function blowawayAndToggle() {
   document.body.appendChild(cvs);
   const ctx2 = cvs.getContext('2d');
 
-  const lineEls = document.querySelectorAll('.poem-line');
-  lineEls.forEach(el => { el.style.opacity = '0'; });
+  // Stagger-fade each line so they dissolve top-to-bottom like wind
+  const lineEls = [...document.querySelectorAll('.poem-line')];
+  lineEls.forEach((el, i) => {
+    el.style.transition = `opacity ${0.9 + i * 0.04}s ease ${i * 0.12}s`;
+    el.style.opacity = '0';
+  });
 
   if (!window.Matter) {
     // Fallback if CDN failed
     cvs.remove();
-    lineEls.forEach(el => { el.style.opacity = ''; });
+    lineEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
     document.body.classList.toggle('day');
     resetAndReveal();
     blowawayInProgress = false;
@@ -293,24 +297,26 @@ function blowawayAndToggle() {
   }
 
   const { Engine, Runner, Bodies, Body, Events, World } = Matter;
-  const engine = Engine.create({ gravity: { y: 0.35 } });
+  const engine = Engine.create({ gravity: { y: 0.18 } });
   const runner = Runner.create();
 
   const bodies = [];
-  lineData.forEach(({ rect, color }) => {
-    const count = 28 + Math.floor(Math.random() * 10);
+  lineData.forEach(({ rect, color }, lineIdx) => {
+    const count = 32 + Math.floor(Math.random() * 12);
+    const spawnDelay = lineIdx * 120; // lines spawn particles in sequence
     for (let i = 0; i < count; i++) {
       const bw = 2 + Math.random() * 4;
       const bh = 1.5 + Math.random() * 2.5;
       const b  = Bodies.rectangle(
         rect.left + Math.random() * rect.width,
         rect.top  + Math.random() * rect.height,
-        bw, bh, { frictionAir: 0.018 }
+        bw, bh, { frictionAir: 0.025, isStatic: true }
       );
-      Body.setVelocity(b, { x: (Math.random() - 0.4) * 2, y: -(Math.random() * 1.8) });
       b._color = color;
       b._bw = bw;
       b._bh = bh;
+      b._spawnDelay = spawnDelay + Math.random() * 80;
+      b._active = false;
       bodies.push(b);
       World.add(engine.world, b);
     }
@@ -319,22 +325,33 @@ function blowawayAndToggle() {
   Runner.run(runner, engine);
 
   Events.on(engine, 'beforeUpdate', () => {
+    const elapsed = performance.now() - startTime;
     bodies.forEach(b => {
-      Body.applyForce(b, b.position, {
-        x: (0.003 + Math.random() * 0.003) * b.mass,
-        y: (-0.001 + (Math.random() - 0.5) * 0.001) * b.mass,
-      });
+      if (!b._active && elapsed >= b._spawnDelay) {
+        b._active = true;
+        Body.setStatic(b, false);
+        Body.setVelocity(b, { x: (Math.random() - 0.35) * 1.5, y: -(Math.random() * 1.2) });
+      }
+      if (b._active) {
+        Body.applyForce(b, b.position, {
+          x: (0.002 + Math.random() * 0.002) * b.mass,
+          y: (-0.0005 + (Math.random() - 0.5) * 0.0008) * b.mass,
+        });
+      }
     });
   });
 
-  const DURATION = 1600;
+  const DURATION = 3800;
+  const FADE_START = 0.55; // hold full opacity until this fraction of duration
   const startTime = performance.now();
 
   function render(now) {
     const elapsed = now - startTime;
     ctx2.clearRect(0, 0, cvs.width, cvs.height);
-    const alpha = Math.max(0, 1 - elapsed / DURATION);
+    const t = elapsed / DURATION;
+    const alpha = t < FADE_START ? 1 : Math.max(0, 1 - (t - FADE_START) / (1 - FADE_START));
     bodies.forEach(b => {
+      if (!b._active) return;
       ctx2.save();
       ctx2.translate(b.position.x, b.position.y);
       ctx2.rotate(b.angle);
@@ -351,7 +368,7 @@ function blowawayAndToggle() {
     Runner.stop(runner);
     Engine.clear(engine);
     cvs.remove();
-    lineEls.forEach(el => { el.style.opacity = ''; });
+    lineEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
     document.body.classList.toggle('day');
     resetAndReveal();
     blowawayInProgress = false;
@@ -867,7 +884,7 @@ function initPharaoh() {
     if (!document.body.classList.contains('day')) {
       updateEyes(now);
 
-      const cx = W * 0.86, cy = H * 0.38;
+      const cx = W * 0.82, cy = H * 0.38;
       const sc = Math.min(W, H) * 0.21;
       const C = {
         nemes: '#0e2040', nemesD: '#091528',
@@ -973,7 +990,7 @@ function initPharaoh() {
         if (eye.state === 'wince') {
           ctx.save();
           ctx.globalAlpha = (1 - eye.open) * 0.92;
-          ctx.fillStyle = '#39ff14';
+          ctx.fillStyle = C.outline;
           ctx.font = `${Math.round(eyeH * 1.0)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
