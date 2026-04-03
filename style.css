@@ -1,0 +1,301 @@
+:root {
+  --bg: #050a14;
+  --text: #d0d8e8;
+  --text-dim: #6a7a94;
+  --accent: #ffffff;
+  --font-px: 20px;
+  --line-height-px: 38px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Georgia, 'Times New Roman', serif;
+  min-height: 100vh;
+  transition: background 4s ease;
+}
+
+/* ── Day sky ─────────────────────────────────────── */
+/* Colour story taken from the Sphinx/Giza photos:   */
+/* clear teal-blue overhead → pale horizon → amber   */
+.bg-day {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    to bottom,
+    #4a8ab5 0%,
+    #78aece 22%,
+    #c8d8e0 44%,
+    #e8c060 66%,
+    #c87820 82%,
+    #985010 100%
+  );
+  transition: opacity 4s ease;
+}
+
+body.day .bg-day { opacity: 1; }
+
+/* ── Nebula glow blobs ───────────────────────────── */
+.nebula {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 4s ease;
+}
+
+body.day .nebula { opacity: 0; }
+
+.blob { position: absolute; border-radius: 50%; }
+
+.blob-1 {
+  width: 700px; height: 480px;
+  top: 4%; left: 8%;
+  background: radial-gradient(ellipse, rgba(18,38,115,0.38) 0%, transparent 70%);
+  animation: blobDrift 30s ease-in-out infinite alternate;
+}
+.blob-2 {
+  width: 520px; height: 360px;
+  top: 38%; right: 4%;
+  background: radial-gradient(ellipse, rgba(65,15,95,0.28) 0%, transparent 70%);
+  animation: blobDrift 24s ease-in-out infinite alternate-reverse;
+}
+.blob-3 {
+  width: 420px; height: 300px;
+  bottom: 18%; left: 28%;
+  background: radial-gradient(ellipse, rgba(8,28,75,0.24) 0%, transparent 70%);
+  animation: blobDrift 38s ease-in-out infinite alternate;
+}
+
+@keyframes blobDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(55px, 35px) scale(1.18); }
+}
+
+/* ── Stars ───────────────────────────────────────── */
+.stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 4s ease;
+}
+
+body.day .stars { opacity: 0; }
+
+/* ── Moon / Sun ──────────────────────────────────── */
+.moon {
+  position: fixed;
+  top: 7%;
+  right: 10%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, #eef0ff, #b8c4e8);
+  box-shadow:
+    0 0 18px 6px rgba(180, 200, 255, 0.28),
+    0 0 55px 18px rgba(150, 170, 255, 0.14),
+    0 0 110px 38px rgba(120, 140, 230, 0.07);
+  animation: moonPulse 9s ease-in-out infinite alternate;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 2;
+  transition:
+    background 3s ease,
+    box-shadow 3s ease,
+    width 3s ease,
+    height 3s ease,
+    top 3s ease,
+    right 3s ease;
+}
+
+body.day .moon {
+  width: 80px;
+  height: 80px;
+  top: 6%;
+  right: 9%;
+  background: radial-gradient(circle at 42% 40%, #fffbe0, #f5c842);
+  box-shadow:
+    0 0 30px 12px rgba(255, 220, 80, 0.55),
+    0 0 90px 35px rgba(255, 180, 40, 0.3),
+    0 0 200px 80px rgba(255, 150, 20, 0.15);
+  animation: sunPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes moonPulse {
+  from {
+    box-shadow:
+      0 0 18px 6px rgba(180, 200, 255, 0.28),
+      0 0 55px 18px rgba(150, 170, 255, 0.14),
+      0 0 110px 38px rgba(120, 140, 230, 0.07);
+  }
+  to {
+    box-shadow:
+      0 0 28px 10px rgba(180, 200, 255, 0.38),
+      0 0 80px 28px rgba(150, 170, 255, 0.2),
+      0 0 160px 55px rgba(120, 140, 230, 0.1);
+  }
+}
+
+@keyframes sunPulse {
+  from {
+    box-shadow:
+      0 0 30px 12px rgba(255, 220, 80, 0.55),
+      0 0 90px 35px rgba(255, 180, 40, 0.3),
+      0 0 200px 80px rgba(255, 150, 20, 0.15);
+  }
+  to {
+    box-shadow:
+      0 0 45px 18px rgba(255, 220, 80, 0.65),
+      0 0 130px 50px rgba(255, 180, 40, 0.38),
+      0 0 280px 110px rgba(255, 150, 20, 0.2);
+  }
+}
+
+/* ── Dust canvas ─────────────────────────────────── */
+#dust-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Horizons ────────────────────────────────────── */
+.horizon {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 3s ease;
+}
+
+.horizon-night { height: 260px; opacity: 1; }
+.horizon-day   { display: none; }
+
+body.day .horizon-night { opacity: 0; }
+
+/* ── Main content ────────────────────────────────── */
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 5rem 2rem 7rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 4rem;
+  opacity: 0;
+  animation: headerFade 1.4s ease forwards 0.4s;
+}
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+  transition: color 3s ease;
+}
+
+body.day h1 { color: #1a0c04; }
+
+.attribution {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  font-style: italic;
+  transition: color 3s ease;
+}
+
+body.day .attribution { color: #4a2e10; }
+
+/* ── Poem layout ─────────────────────────────────── */
+.poem-container { position: relative; }
+
+.poem-line-wrapper {
+  position: absolute;
+  left: 0;
+  transition: transform 0.08s linear;
+}
+
+.poem-line {
+  display: block;
+  white-space: pre;
+  font-size: var(--font-px);
+  line-height: var(--line-height-px);
+  color: var(--text);
+  opacity: 0;
+  cursor: default;
+  transition: color 3s ease, text-shadow 0.5s ease;
+}
+
+.poem-line:hover {
+  text-shadow: 0 0 24px rgba(180, 210, 255, 0.35);
+}
+
+body.day .poem-line           { color: #1e0e04 !important; }
+body.day .poem-line.boast     { color: #7a1a04 !important; }
+body.day .poem-line.aftermath { color: #5a3a18 !important; }
+body.day .poem-line:hover     { text-shadow: 0 0 20px rgba(200, 120, 30, 0.4); }
+
+.word { cursor: default; }
+.word:hover {
+  text-shadow: 0 0 12px rgba(180, 210, 255, 0.5), 1px 1px 0 rgba(0,0,0,0.4);
+  color: #fff;
+}
+body.day .word:hover {
+  color: #3a1202 !important;
+  text-shadow: 0 0 12px rgba(220, 140, 40, 0.5), 1px 1px 0 rgba(0,0,0,0.3);
+}
+
+.poem-line.boast     { color: #d0d8e8; }
+.poem-line.aftermath { color: #6a7a94; }
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes headerFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lineReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes boastReveal {
+  0%   { opacity: 0; transform: translateY(10px); }
+  30%  { opacity: 1; transform: translateY(0);
+         color: #fff;
+         text-shadow: 0 0 40px rgba(255, 255, 255, 0.55); }
+  100% { opacity: 1; transform: translateY(0);
+         text-shadow: none; }
+}
+
+.poem-line.reveal        { animation: lineReveal  1.6s ease    forwards; }
+.poem-line.reveal.boast  { animation: boastReveal 3.2s ease    forwards; }
+
+@keyframes wordDecay {
+  0%   { opacity: 0; filter: blur(6px); letter-spacing: 0.4em; }
+  35%  { opacity: 0.5; filter: blur(2px); letter-spacing: 0.08em; }
+  70%  { opacity: 0.75; filter: blur(0.5px); letter-spacing: 0.01em; }
+  100% { opacity: 0.65; filter: none; letter-spacing: 0; }
+}
+
+.word.decayed {
+  animation: wordDecay 2.4s ease forwards;
+  color: inherit;
+}

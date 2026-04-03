@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ozymandias</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Day sky overlay (fades in on click) -->
+  <div class="bg-day"></div>
+
+  <!-- Layer 1: nebula glow blobs -->
+  <div class="nebula">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Layer 2: static star field -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Layer 3: moon / sun -->
+  <div class="moon" id="moon" title="Click to see the day"></div>
+
+  <!-- Layer 4: dust particles -->
+  <canvas id="dust-canvas"></canvas>
+
+  <!-- Night horizon -->
+  <svg class="horizon horizon-night" viewBox="0 0 1920 260" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,260 L0,200 Q240,185 480,192 Q640,185 800,190 Q960,183 1120,189 Q1360,182 1600,191 Q1780,186 1920,194 L1920,260 Z"
+          fill="rgba(8,15,40,0.55)"/>
+    <path d="M0,260 L0,230 Q300,218 520,224 Q720,216 900,222 Q1080,215 1300,222 Q1560,216 1760,225 Q1860,220 1920,228 L1920,260 Z"
+          fill="rgba(5,10,28,0.7)"/>
+    <rect x="310" y="172" width="16" height="48" fill="rgba(30,50,110,0.22)" rx="1"/>
+    <rect x="304" y="168" width="28" height="7"  fill="rgba(30,50,110,0.22)" rx="1"/>
+    <rect x="330" y="218" width="38" height="9"  fill="rgba(30,50,110,0.16)" rx="2" transform="rotate(-12,349,222)"/>
+    <rect x="1540" y="158" width="20" height="62" fill="rgba(30,50,110,0.2)" rx="1"/>
+    <rect x="1533" y="153" width="34" height="8"  fill="rgba(30,50,110,0.2)" rx="1"/>
+    <rect x="940"  y="180" width="10" height="30" fill="rgba(30,50,110,0.14)" rx="1"/>
+  </svg>
+
+  <!-- Day horizon — sweeping dunes + ruined visages in the sand -->
+  <svg class="horizon horizon-day" viewBox="0 0 1920 480" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <!-- Distant dunes -->
+    <path d="M0,480 L0,310 C180,275 420,295 660,280 C900,265 1140,282 1380,270 C1560,260 1760,276 1920,268 L1920,480 Z"
+          fill="#e8c96a"/>
+    <!-- Mid dunes -->
+    <path d="M0,480 L0,360 C120,332 300,350 520,338 C720,325 960,344 1160,330 C1380,316 1640,338 1920,325 L1920,480 Z"
+          fill="#d4a832"/>
+    <!-- Main foreground sweep -->
+    <path d="M0,480 L0,420 C200,395 440,415 680,400 C880,388 1020,408 1200,418 C1380,428 1640,405 1920,415 L1920,480 Z"
+          fill="#b88818"/>
+
+    <!-- LEFT: shattered visage, tilted, half-sunk in sand -->
+    <!-- Face stone — tilted ~20deg, lying on its side -->
+    <g transform="translate(195,355) rotate(-18)">
+      <ellipse cx="0" cy="0" rx="70" ry="92" fill="#c2ab88"/>
+      <!-- Brow ridge -->
+      <path d="M-50,-38 Q-28,-58 -5,-42" stroke="#8a7254" stroke-width="3.5" fill="none"/>
+      <path d="M5,-40 Q28,-58 50,-36" stroke="#8a7254" stroke-width="3.5" fill="none"/>
+      <!-- Hollow eye sockets -->
+      <ellipse cx="-25" cy="-22" rx="19" ry="13" fill="#7a6242"/>
+      <ellipse cx="25"  cy="-20" rx="19" ry="13" fill="#7a6242"/>
+      <!-- Nose bridge -->
+      <path d="M-7,2 L-10,32 Q0,40 10,32 L7,2" fill="#aa9270"/>
+      <!-- Sneer / cold frown -->
+      <path d="M-30,52 Q-14,44 0,47 Q14,44 30,52" stroke="#7a6242" stroke-width="3" fill="none"/>
+      <path d="M-18,58 Q0,52 18,58"               stroke="#7a6242" stroke-width="2" fill="none"/>
+      <!-- Wrinkled lip detail -->
+      <line x1="-8" y1="50" x2="-5" y2="56" stroke="#8a7254" stroke-width="1.5"/>
+      <line x1="5"  y1="50" x2="8"  y2="56" stroke="#8a7254" stroke-width="1.5"/>
+      <!-- Cracks across face -->
+      <path d="M-15,-70 L-10,-10 L-20,25" stroke="rgba(0,0,0,0.18)" stroke-width="2"   fill="none"/>
+      <path d="M22,-60  L18,5"            stroke="rgba(0,0,0,0.12)" stroke-width="1.5" fill="none"/>
+      <path d="M-35,10  L-10,55"          stroke="rgba(0,0,0,0.10)" stroke-width="1"   fill="none"/>
+    </g>
+    <!-- Sand burying the lower half of the left visage -->
+    <path d="M80,390 C120,370 175,378 230,368 C280,376 330,370 380,385 L380,480 L80,480 Z"
+          fill="#b88818"/>
+
+    <!-- RIGHT: broken pedestal fragment with faint inscription, half-buried -->
+    <g transform="translate(1580,348)">
+      <!-- Stone block -->
+      <rect x="-80" y="0" width="160" height="95" rx="3" fill="#bfaa88"/>
+      <!-- Top edge broken/chipped -->
+      <polygon points="-80,0 -70,-12 -55,-5 -38,-14 -20,-4 0,-15 18,-6 35,-13 55,-3 70,-11 80,0"
+               fill="#aa9570"/>
+      <!-- Faint carved inscription lines -->
+      <line x1="-58" y1="25" x2="58"  y2="25" stroke="rgba(80,50,20,0.25)" stroke-width="2"/>
+      <line x1="-58" y1="42" x2="45"  y2="42" stroke="rgba(80,50,20,0.22)" stroke-width="2"/>
+      <line x1="-58" y1="59" x2="52"  y2="59" stroke="rgba(80,50,20,0.20)" stroke-width="2"/>
+      <line x1="-58" y1="76" x2="30"  y2="76" stroke="rgba(80,50,20,0.18)" stroke-width="2"/>
+      <!-- Crack down the block -->
+      <path d="M10,0 L6,50 L14,95" stroke="rgba(0,0,0,0.15)" stroke-width="1.5" fill="none"/>
+    </g>
+    <!-- Sand around pedestal base -->
+    <path d="M1460,420 C1500,405 1560,412 1620,405 C1680,412 1730,405 1780,415 L1780,480 L1460,480 Z"
+          fill="#b88818"/>
+
+    <!-- DISTANT: tiny broken fragment far right, almost lost in the dunes -->
+    <ellipse cx="1820" cy="318" rx="22" ry="14" fill="#c0a878" opacity="0.5"
+             transform="rotate(-10,1820,318)"/>
+  </svg>
+
+  <main>
+    <header>
+      <h1>Ozymandias</h1>
+      <p class="attribution">Percy Bysshe Shelley &mdash; 1818</p>
+    </header>
+    <div class="poem-container" id="poem-container"></div>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
