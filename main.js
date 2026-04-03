@@ -1,4 +1,4 @@
-import { prepareWithSegments, layoutWithLines } from './node_modules/@chenglou/pretext/dist/layout.js';
+import { prepareWithSegments, layoutWithLines } from './vendor/pretext/layout.js';
 
 const POEM = `I met a traveller from an antique land,
 Who said—"Two vast and trunkless legs of stone
