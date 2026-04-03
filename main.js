@@ -450,6 +450,10 @@ document.addEventListener('click', (e) => {
   if (word) scatterWord(word, e);
 });
 
+document.getElementById('title').addEventListener('click', () => {
+  window.location.href = 'pillar.html';
+});
+
 document.addEventListener('mousemove', (e) => {
   mouseX = e.clientX;
   mouseY = e.clientY;
