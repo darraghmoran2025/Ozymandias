@@ -92,6 +92,18 @@ body.day .nebula { opacity: 0; }
 
 body.day .stars { opacity: 0; }
 
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(200, 220, 255, 1);
+  animation: twinkle linear infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: var(--star-min); }
+  50%       { opacity: var(--star-max); }
+}
+
 /* ── Moon / Sun ──────────────────────────────────── */
 .moon {
   position: fixed;
@@ -222,6 +234,21 @@ body.day h1 { color: #1a0c04; }
 }
 
 body.day .attribution { color: #4a2e10; }
+
+.wiki-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(106, 122, 148, 0.4);
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+.wiki-link:hover {
+  color: var(--accent);
+  border-bottom-color: rgba(180, 210, 255, 0.7);
+}
+body.day .wiki-link:hover {
+  color: #1a0c04;
+  border-bottom-color: rgba(150, 80, 20, 0.6);
+}
 
 /* ── Poem layout ─────────────────────────────────── */
 .poem-container { position: relative; }

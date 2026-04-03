@@ -44,26 +44,21 @@ const lockedWrappers = new Set();
 
 function generateStars() {
   const container = document.getElementById('stars');
-  const w = Math.max(window.screen.width, 2400);
-  const h = Math.max(window.screen.height, 1600);
   const count = 320;
-  const shadows = [];
   for (let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * w);
-    const y = Math.floor(Math.random() * h);
-    const opacity = (0.15 + Math.random() * 0.7).toFixed(2);
+    const x    = (Math.random() * 100).toFixed(2);
+    const y    = (Math.random() * 100).toFixed(2);
     const size = Math.random() < 0.8 ? 1 : 2;
-    shadows.push(`${x}px ${y}px 0 ${size}px rgba(200, 220, 255, ${opacity})`);
+    const minOp = (0.08 + Math.random() * 0.18).toFixed(2);
+    const maxOp = Math.min(1, parseFloat(minOp) + 0.3 + Math.random() * 0.55).toFixed(2);
+    const dur   = (2 + Math.random() * 5).toFixed(2);
+    const delay = -(Math.random() * 12).toFixed(2);
+
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.cssText = `left:${x}%;top:${y}%;width:${size}px;height:${size}px;--star-min:${minOp};--star-max:${maxOp};animation-duration:${dur}s;animation-delay:${delay}s;`;
+    container.appendChild(star);
   }
-  const dot = document.createElement('div');
-  dot.style.cssText = `
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    background: transparent;
-    box-shadow: ${shadows.join(', ')};
-  `;
-  container.appendChild(dot);
 }
 
 function classifyLine(text) {
@@ -257,8 +252,114 @@ function scatterWord(wordEl, e) {
   }, 5000);
 }
 
+let blowawayInProgress = false;
+
+function resetAndReveal() {
+  const container = document.getElementById('poem-container');
+  const lines = container.querySelectorAll('.poem-line');
+  lines.forEach(el => el.classList.remove('reveal'));
+  void container.offsetHeight;
+  animateLines(container);
+}
+
+function blowawayAndToggle() {
+  if (blowawayInProgress) return;
+  blowawayInProgress = true;
+
+  const wrappers = [...document.querySelectorAll('.poem-line-wrapper')];
+  const lineData = wrappers.map(w => {
+    const lineEl = w.querySelector('.poem-line');
+    return { rect: w.getBoundingClientRect(), color: getComputedStyle(lineEl).color };
+  }).filter(d => d.rect.width > 0);
+
+  const cvs = document.createElement('canvas');
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight;
+  cvs.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:50;';
+  document.body.appendChild(cvs);
+  const ctx2 = cvs.getContext('2d');
+
+  const lineEls = document.querySelectorAll('.poem-line');
+  lineEls.forEach(el => { el.style.opacity = '0'; });
+
+  if (!window.Matter) {
+    // Fallback if CDN failed
+    cvs.remove();
+    lineEls.forEach(el => { el.style.opacity = ''; });
+    document.body.classList.toggle('day');
+    resetAndReveal();
+    blowawayInProgress = false;
+    return;
+  }
+
+  const { Engine, Runner, Bodies, Body, Events, World } = Matter;
+  const engine = Engine.create({ gravity: { y: 0.35 } });
+  const runner = Runner.create();
+
+  const bodies = [];
+  lineData.forEach(({ rect, color }) => {
+    const count = 28 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < count; i++) {
+      const bw = 2 + Math.random() * 4;
+      const bh = 1.5 + Math.random() * 2.5;
+      const b  = Bodies.rectangle(
+        rect.left + Math.random() * rect.width,
+        rect.top  + Math.random() * rect.height,
+        bw, bh, { frictionAir: 0.018 }
+      );
+      Body.setVelocity(b, { x: (Math.random() - 0.4) * 2, y: -(Math.random() * 1.8) });
+      b._color = color;
+      b._bw = bw;
+      b._bh = bh;
+      bodies.push(b);
+      World.add(engine.world, b);
+    }
+  });
+
+  Runner.run(runner, engine);
+
+  Events.on(engine, 'beforeUpdate', () => {
+    bodies.forEach(b => {
+      Body.applyForce(b, b.position, {
+        x: (0.003 + Math.random() * 0.003) * b.mass,
+        y: (-0.001 + (Math.random() - 0.5) * 0.001) * b.mass,
+      });
+    });
+  });
+
+  const DURATION = 1600;
+  const startTime = performance.now();
+
+  function render(now) {
+    const elapsed = now - startTime;
+    ctx2.clearRect(0, 0, cvs.width, cvs.height);
+    const alpha = Math.max(0, 1 - elapsed / DURATION);
+    bodies.forEach(b => {
+      ctx2.save();
+      ctx2.translate(b.position.x, b.position.y);
+      ctx2.rotate(b.angle);
+      ctx2.globalAlpha = alpha;
+      ctx2.fillStyle = b._color;
+      ctx2.fillRect(-b._bw / 2, -b._bh / 2, b._bw, b._bh);
+      ctx2.restore();
+    });
+    if (elapsed < DURATION) requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+  setTimeout(() => {
+    Runner.stop(runner);
+    Engine.clear(engine);
+    cvs.remove();
+    lineEls.forEach(el => { el.style.opacity = ''; });
+    document.body.classList.toggle('day');
+    resetAndReveal();
+    blowawayInProgress = false;
+  }, DURATION);
+}
+
 document.getElementById('moon').addEventListener('click', () => {
-  document.body.classList.toggle('day');
+  blowawayAndToggle();
 });
 
 document.addEventListener('click', (e) => {
@@ -766,7 +867,7 @@ function initPharaoh() {
     if (!document.body.classList.contains('day')) {
       updateEyes(now);
 
-      const cx = W * 0.74, cy = H * 0.38;
+      const cx = W * 0.86, cy = H * 0.38;
       const sc = Math.min(W, H) * 0.21;
       const C = {
         nemes: '#0e2040', nemesD: '#091528',
@@ -866,6 +967,18 @@ function initPharaoh() {
         if (openH > 0.5) {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(ex - eyeW/2, eyeY + eyeH/2 - openH, eyeW, openH);
+        }
+
+        // Hieroglyph — only visible during wince, fades in as eye closes
+        if (eye.state === 'wince') {
+          ctx.save();
+          ctx.globalAlpha = (1 - eye.open) * 0.92;
+          ctx.fillStyle = '#39ff14';
+          ctx.font = `${Math.round(eyeH * 1.0)}px serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(idx === 0 ? '𓂀' : '𓁹', ex, eyeY);
+          ctx.restore();
         }
 
         // Wince stress lines
