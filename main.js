@@ -994,7 +994,8 @@ function initPharaoh() {
           ctx.font = `${Math.round(eyeH * 1.0)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(idx === 0 ? '𓂀' : '𓁹', ex, eyeY);
+          const glyphY = idx === 1 ? eyeY - eyeH * 0.2 : eyeY;
+          ctx.fillText(idx === 0 ? '𓂀' : '𓁹', ex, glyphY);
           ctx.restore();
         }
 
