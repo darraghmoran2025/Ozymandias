@@ -279,11 +279,48 @@ function blowawayAndToggle() {
   document.body.appendChild(cvs);
   const ctx2 = cvs.getContext('2d');
 
-  // Stagger-fade each line so they dissolve top-to-bottom like wind
   const lineEls = [...document.querySelectorAll('.poem-line')];
-  lineEls.forEach((el, i) => {
-    el.style.transition = `opacity ${0.9 + i * 0.04}s ease ${i * 0.12}s`;
-    el.style.opacity = '0';
+  const letterEls = [];
+
+  // Scatter individual letters with the wind, line by line top-to-bottom
+  lineEls.forEach((lineEl, lineIdx) => {
+    if (!lineEl.classList.contains('reveal')) { lineEl.style.opacity = '0'; return; }
+    const words = lineEl.querySelectorAll('.word');
+    const lineColor = getComputedStyle(lineEl).color;
+    const lineFontSize = getComputedStyle(lineEl).fontSize;
+    const lineFontFamily = getComputedStyle(lineEl).fontFamily;
+
+    words.forEach(word => {
+      if (word.dataset.scattering) return;
+      const rect = word.getBoundingClientRect();
+      if (rect.width === 0) return;
+      const text = word.textContent;
+      const charW = rect.width / text.length;
+
+      text.split('').forEach((char, ci) => {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.style.cssText = `position:fixed;left:${(rect.left + ci * charW).toFixed(1)}px;top:${rect.top.toFixed(1)}px;font-size:${lineFontSize};font-family:${lineFontFamily};color:${lineColor};line-height:1;pointer-events:none;z-index:51;white-space:pre;`;
+        document.body.appendChild(span);
+        letterEls.push(span);
+
+        const delay = lineIdx * 110 + ci * 6 + Math.random() * 70;
+        setTimeout(() => {
+          const tx = 90 + Math.random() * 370;
+          const ty = (Math.random() - 0.45) * 110;
+          const rot = (Math.random() - 0.5) * 200;
+          const dur = (0.9 + Math.random() * 0.7).toFixed(2);
+          const opDel = (0.22 + Math.random() * 0.3).toFixed(2);
+          span.style.transition = `transform ${dur}s cubic-bezier(0.15,0,0.65,1), opacity 0.45s ease-in ${opDel}s`;
+          span.style.transform = `translate(${tx}px,${ty}px) rotate(${rot}deg) scale(0.08)`;
+          span.style.opacity = '0';
+        }, delay);
+      });
+    });
+
+    // Hide original text immediately once letter clones are in place
+    lineEl.style.transition = `opacity 0.05s ease ${(lineIdx * 0.06).toFixed(2)}s`;
+    lineEl.style.opacity = '0';
   });
 
   if (!window.Matter) {
@@ -369,6 +406,7 @@ function blowawayAndToggle() {
     Engine.clear(engine);
     cvs.remove();
     lineEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
+    letterEls.forEach(el => el.remove());
     document.body.classList.toggle('day');
     resetAndReveal();
     blowawayInProgress = false;
@@ -884,7 +922,7 @@ function initPharaoh() {
     if (!document.body.classList.contains('day')) {
       updateEyes(now);
 
-      const cx = W * 0.82, cy = H * 0.38;
+      const cx = W * 0.77, cy = H * 0.38;
       const sc = Math.min(W, H) * 0.21;
       const C = {
         nemes: '#0e2040', nemesD: '#091528',
@@ -990,7 +1028,7 @@ function initPharaoh() {
         if (eye.state === 'wince') {
           ctx.save();
           ctx.globalAlpha = (1 - eye.open) * 0.92;
-          ctx.fillStyle = C.outline;
+          ctx.fillStyle = '#7ec8ff';
           ctx.font = `${Math.round(eyeH * 1.0)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
