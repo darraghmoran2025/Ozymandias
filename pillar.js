@@ -21,17 +21,10 @@
   }
 }
 
-// ── Canvas + moon element ──────────────────────────────────────────────
+// ── Canvas ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('pillar-canvas');
 const ctx    = canvas.getContext('2d');
-const moonEl = document.getElementById('moon-return');
 let W = 0, H = 0;
-
-// Moon starts hidden; click navigates home
-moonEl.style.opacity = '0';
-moonEl.style.pointerEvents = 'none';
-moonEl.style.transition = 'opacity 3s ease';
-moonEl.addEventListener('click', () => { window.location.href = 'index.html'; });
 
 function resize() {
   W = canvas.width  = window.innerWidth;
@@ -180,7 +173,7 @@ function triggerGust() {
   let batch = 0;
   const iv = setInterval(() => {
     for (let i = 0; i < 20; i++) {
-      const speed = 5 + Math.random() * 9;
+      const speed = 9 + Math.random() * 9; // faster: 9–18 px/frame
       gust.push({
         x:      -(20 + Math.random() * 140),
         y:      Math.random() * H,
@@ -218,13 +211,8 @@ function updateTremor(t) {
 }
 
 // ── Animation state ────────────────────────────────────────────────────
-let t0 = null, crumbleGo = false, resetTimer = null, pillarA = 0;
+let t0 = null, crumbleGo = false, resetTimer = null, pillarA = 0, navDone = false;
 const lineStarts = [0, 0, 0]; // performance.now() when each aftermath line starts
-
-function showMoon() {
-  moonEl.style.opacity = '1';
-  moonEl.style.pointerEvents = 'auto';
-}
 
 // ── Crumble scheduling ─────────────────────────────────────────────────
 // All delays relative to when scheduleCrumble() is called (at elapsed = 10 000 ms)
@@ -253,9 +241,8 @@ function scheduleCrumble() {
   setTimeout(() => { lineStarts[1] = performance.now(); }, baseDelay + 7500);
   setTimeout(() => { lineStarts[2] = performance.now(); }, baseDelay + 11500);
 
-  // Gust sweeps through after last line is fully visible; moon follows
+  // Gust sweeps through after the last line is fully visible
   setTimeout(triggerGust, baseDelay + 14500);
-  setTimeout(showMoon,    baseDelay + 17500);
 }
 
 function launch(c, zone) {
@@ -331,15 +318,29 @@ function drawChunk(c) {
 
 function drawInscription() {
   ctx.save();
-  ctx.font = 'bold 13px Georgia, serif';
-  ctx.letterSpacing = '1.5px';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  const maxW   = SHAFT_W - 20; // 10 px padding each side
+  const baseFs = 13;
 
   INSCRIPTION.forEach((line, li) => {
     const ci = INSC_OFFSET + li;
     if (activeCourses.has(ci)) return;
     const ly = shaftTop + ci * courseH + courseH / 2;
+
+    // Measure at base size with no letter-spacing to get true minimum width
+    ctx.font = `bold ${baseFs}px Georgia, serif`;
+    ctx.letterSpacing = '0px';
+    const measured = ctx.measureText(line).width;
+
+    if (measured <= maxW) {
+      // Fits — add modest letter spacing for carved look
+      ctx.letterSpacing = `${((maxW - measured) / (line.length + 1)).toFixed(1)}px`;
+    } else {
+      // Too wide — scale font down, keep spacing at 0
+      ctx.font = `bold ${Math.floor(baseFs * maxW / measured)}px Georgia, serif`;
+    }
 
     // Deep incised shadow
     ctx.fillStyle = 'rgba(14,4,1,0.95)';
@@ -518,6 +519,12 @@ function loop(now) {
   drawRubble();
   drawAftermathLines(now);
 
+  // Once all gust particles have swept off screen, return to the main page
+  if (gustActive && gust.length === 0 && !navDone) {
+    navDone = true;
+    setTimeout(() => { window.location.href = 'index.html'; }, 700);
+  }
+
   requestAnimationFrame(loop);
 }
 
@@ -530,6 +537,7 @@ window.addEventListener('resize', () => {
     crumbleGo = false;
     pillarA   = 0;
     gustActive = false;
+    navDone   = false;
     lineStarts[0] = lineStarts[1] = lineStarts[2] = 0;
     burst.length = rubble.length = gust.length = 0;
     moonEl.style.opacity = '0';
