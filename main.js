@@ -1158,3 +1158,9 @@ initRuins();
 initTumbleweed();
 buildPoem();
 window.addEventListener('resize', handleResize);
+
+// Force a fresh load when the browser restores this page from bfcache
+// (prevents poem text appearing static/already-revealed on return from pillar page)
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) window.location.reload();
+});
