@@ -108,12 +108,25 @@ function buildPoem() {
   animateLines(container);
 }
 
+let revealTimeouts = [];
+let revealCancelled = false;
+
+function cancelReveal() {
+  revealCancelled = true;
+  revealTimeouts.forEach(id => clearTimeout(id));
+  revealTimeouts = [];
+}
+
 function animateLines(container) {
+  revealCancelled = false;
   const lines = container.querySelectorAll('.poem-line');
   let delay = INITIAL_DELAY_MS;
 
   lines.forEach((el) => {
-    setTimeout(() => el.classList.add('reveal'), delay);
+    const id = setTimeout(() => {
+      if (!revealCancelled) el.classList.add('reveal');
+    }, delay);
+    revealTimeouts.push(id);
     delay += STAGGER_MS;
     if (el.classList.contains('boast')) delay += BOAST_EXTRA_DELAY_MS;
   });
@@ -255,16 +268,25 @@ function scatterWord(wordEl, e) {
 let blowawayInProgress = false;
 
 function resetAndReveal() {
+  cancelReveal();
   const container = document.getElementById('poem-container');
   const lines = container.querySelectorAll('.poem-line');
-  lines.forEach(el => el.classList.remove('reveal'));
+  lines.forEach(el => {
+    el.classList.remove('reveal');
+    el.style.animation = 'none';
+  });
   void container.offsetHeight;
-  animateLines(container);
+  lines.forEach(el => {
+    el.classList.add('reveal');
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
 }
 
 function blowawayAndToggle() {
   if (blowawayInProgress) return;
   blowawayInProgress = true;
+  cancelReveal();
 
   const wrappers = [...document.querySelectorAll('.poem-line-wrapper')];
   const lineData = wrappers.map(w => {
@@ -280,47 +302,26 @@ function blowawayAndToggle() {
   const ctx2 = cvs.getContext('2d');
 
   const lineEls = [...document.querySelectorAll('.poem-line')];
-  const letterEls = [];
 
-  // Scatter individual letters with the wind, line by line top-to-bottom
+  // Snapshot revealed lines for canvas, then immediately kill all DOM text
+  // so CSS animations cannot continue running during the blowaway.
+  const lineTextData = [];
   lineEls.forEach((lineEl, lineIdx) => {
-    if (!lineEl.classList.contains('reveal')) { lineEl.style.opacity = '0'; return; }
-    const words = lineEl.querySelectorAll('.word');
-    const lineColor = getComputedStyle(lineEl).color;
-    const lineFontSize = getComputedStyle(lineEl).fontSize;
-    const lineFontFamily = getComputedStyle(lineEl).fontFamily;
-
-    words.forEach(word => {
-      if (word.dataset.scattering) return;
-      const rect = word.getBoundingClientRect();
-      if (rect.width === 0) return;
-      const text = word.textContent;
-      const charW = rect.width / text.length;
-
-      text.split('').forEach((char, ci) => {
-        const span = document.createElement('span');
-        span.textContent = char;
-        span.style.cssText = `position:fixed;left:${(rect.left + ci * charW).toFixed(1)}px;top:${rect.top.toFixed(1)}px;font-size:${lineFontSize};font-family:${lineFontFamily};color:${lineColor};line-height:1;pointer-events:none;z-index:51;white-space:pre;`;
-        document.body.appendChild(span);
-        letterEls.push(span);
-
-        const delay = lineIdx * 110 + ci * 6 + Math.random() * 70;
-        setTimeout(() => {
-          const tx = 90 + Math.random() * 370;
-          const ty = (Math.random() - 0.45) * 110;
-          const rot = (Math.random() - 0.5) * 200;
-          const dur = (0.9 + Math.random() * 0.7).toFixed(2);
-          const opDel = (0.22 + Math.random() * 0.3).toFixed(2);
-          span.style.transition = `transform ${dur}s cubic-bezier(0.15,0,0.65,1), opacity 0.45s ease-in ${opDel}s`;
-          span.style.transform = `translate(${tx}px,${ty}px) rotate(${rot}deg) scale(0.08)`;
-          span.style.opacity = '0';
-        }, delay);
+    if (lineEl.classList.contains('reveal')) {
+      const wrapper = lineEl.closest('.poem-line-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      lineTextData.push({
+        text: lineEl.textContent,
+        x: rect.left,
+        y: rect.top + rect.height / 2,
+        color: getComputedStyle(lineEl).color,
+        releaseAt: lineIdx * 120,
+        vx: 0, vy: 0, rot: 0, vrot: 0, ox: 0, oy: 0,
+        active: false,
       });
-    });
-
-    // Hide original text immediately once letter clones are in place
-    lineEl.style.transition = `opacity 0.05s ease ${(lineIdx * 0.06).toFixed(2)}s`;
-    lineEl.style.opacity = '0';
+    }
+    lineEl.classList.remove('reveal'); // stop CSS animation immediately
+    lineEl.style.opacity = '0';        // hide immediately
   });
 
   if (!window.Matter) {
@@ -397,6 +398,33 @@ function blowawayAndToggle() {
       ctx2.fillRect(-b._bw / 2, -b._bh / 2, b._bw, b._bh);
       ctx2.restore();
     });
+
+    // Render poem lines as canvas text, moving with the wind
+    lineTextData.forEach(ld => {
+      if (!ld.active && elapsed >= ld.releaseAt) {
+        ld.active = true;
+        ld.vx = 1.5 + Math.random() * 0.8;
+        ld.vy = -(Math.random() * 0.4);
+        ld.vrot = (Math.random() - 0.5) * 0.012;
+      }
+      if (!ld.active) return;
+      ld.vx = ld.vx * 0.992 + 0.018 + Math.random() * 0.008;
+      ld.vy = ld.vy * 0.99  + 0.006;
+      ld.vrot = ld.vrot * 0.97 + (Math.random() - 0.5) * 0.0004;
+      ld.ox += ld.vx;
+      ld.oy += ld.vy;
+      ld.rot += ld.vrot;
+      ctx2.save();
+      ctx2.translate(ld.x + ld.ox, ld.y + ld.oy);
+      ctx2.rotate(ld.rot);
+      ctx2.globalAlpha = alpha;
+      ctx2.fillStyle = ld.color;
+      ctx2.font = '20px Georgia, serif';
+      ctx2.textBaseline = 'middle';
+      ctx2.fillText(ld.text, 0, 0);
+      ctx2.restore();
+    });
+
     if (elapsed < DURATION) requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
@@ -405,8 +433,7 @@ function blowawayAndToggle() {
     Runner.stop(runner);
     Engine.clear(engine);
     cvs.remove();
-    lineEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
-    letterEls.forEach(el => el.remove());
+    lineEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; el.style.animation = ''; el.style.transform = ''; });
     document.body.classList.toggle('day');
     resetAndReveal();
     blowawayInProgress = false;
@@ -1028,7 +1055,7 @@ function initPharaoh() {
         if (eye.state === 'wince') {
           ctx.save();
           ctx.globalAlpha = (1 - eye.open) * 0.92;
-          ctx.fillStyle = '#7ec8ff';
+          ctx.fillStyle = '#c8eeff';
           ctx.font = `${Math.round(eyeH * 1.0)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
