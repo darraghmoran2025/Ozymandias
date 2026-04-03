@@ -1,4 +1,4 @@
-import { prepareWithSegments, layoutWithLines } from './vendor/pretext/layout.js';
+import { prepareWithSegments, layoutWithLines, clearCache } from './vendor/pretext/layout.js';
 
 const POEM = `I met a traveller from an antique land,
 Who said—"Two vast and trunkless legs of stone
@@ -150,6 +150,7 @@ function applyRepel() {
 
 
 function handleResize() {
+  clearCache();
   const container = document.getElementById('poem-container');
   const width = container.getBoundingClientRect().width;
 
