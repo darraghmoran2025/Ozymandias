@@ -21,6 +21,12 @@
   }
 }
 
+// ── Moon (decorative + early-exit) ─────────────────────────────────────
+const moonEl = document.getElementById('pillar-moon');
+moonEl.addEventListener('click', () => {
+  if (!navDone) { navDone = true; window.location.href = 'index.html'; }
+});
+
 // ── Canvas ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('pillar-canvas');
 const ctx    = canvas.getContext('2d');
@@ -135,7 +141,7 @@ function buildCracks() {
 }
 
 // ── Particles ──────────────────────────────────────────────────────────
-const dust = [], burst = [], gust = [], rubble = [];
+const dust = [], burst = [], gust = [], rubble = [], skyDust = [];
 let gustActive = false, gustSpawningDone = false;
 
 function initDust() {
@@ -148,6 +154,19 @@ function initDust() {
       speed: 0.08 + Math.random() * 0.32,
       drift: (Math.random() - 0.5) * 0.22,
       op: 0.03 + Math.random() * 0.13,
+    });
+  }
+
+  // Atmospheric sky particles — blue-tinted, slow rightward drift (matches main page night)
+  skyDust.length = 0;
+  for (let i = 0; i < 55; i++) {
+    skyDust.push({
+      x:  Math.random() * W,
+      y:  Math.random() * (floorY || H * 0.76),
+      r:  0.4 + Math.random() * 1.2,
+      vx: 0.15 + Math.random() * 0.35,
+      vy: 0.05 + Math.random() * 0.15,
+      op: 0.06 + Math.random() * 0.20,
     });
   }
 }
@@ -375,7 +394,19 @@ function drawCracks(elapsed) {
 }
 
 function drawDust() {
-  // Ambient floating dust
+  // Atmospheric sky particles (blue-tinted, drifts right — matches main page night)
+  skyDust.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x > W)      { p.x = 0;              p.y = Math.random() * floorY; }
+    if (p.y > floorY) { p.y = 0;              p.x = Math.random() * W; }
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(190,205,230,${p.op})`;
+    ctx.fill();
+  });
+
+  // Ambient floating desert dust (warm, rises from floor)
   dust.forEach(p => {
     p.x += p.drift + 0.18;
     p.y -= p.speed;

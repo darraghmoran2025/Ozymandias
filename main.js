@@ -1151,6 +1151,57 @@ initTumbleweed();
 buildPoem();
 window.addEventListener('resize', handleResize);
 
+// ── Year: Arabic ↔ Roman numeral conversion ──────────
+(function () {
+  const yearEl = document.getElementById('year');
+  const ROMAN   = 'MDCCCXVIII';
+  const ARABIC  = '1818';
+  const R_POOL  = 'IVXLCDM';   // chars used while scrambling → Roman
+  const A_POOL  = '0123456789'; // chars used while scrambling → Arabic
+  let isRoman = false;
+  let busy    = false;
+
+  function rand(pool) {
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // Settle characters left-to-right: each locks in after `framesPerChar` ticks.
+  // While a char is pending it shows a random glyph from `pool`.
+  function scrambleTo(target, pool, framesPerChar, intervalMs, onDone) {
+    const len = target.length;
+    let resolved = 0;
+    let tick = 0;
+
+    const iv = setInterval(() => {
+      if (resolved >= len) {
+        clearInterval(iv);
+        yearEl.textContent = target;
+        onDone();
+        return;
+      }
+
+      // Build display: settled prefix + remaining scramble
+      let s = target.slice(0, resolved);
+      for (let i = resolved; i < len; i++) s += rand(pool);
+      yearEl.textContent = s;
+
+      if (++tick >= framesPerChar) { resolved++; tick = 0; }
+    }, intervalMs);
+  }
+
+  yearEl.addEventListener('click', () => {
+    if (busy) return;
+    busy = true;
+    if (!isRoman) {
+      // 1818 → MDCCCXVIII: slow, deliberate, each Roman glyph earned
+      scrambleTo(ROMAN, R_POOL, 8, 55, () => { isRoman = true;  busy = false; });
+    } else {
+      // MDCCCXVIII → 1818: quick collapse back to digits
+      scrambleTo(ARABIC, A_POOL, 4, 48, () => { isRoman = false; busy = false; });
+    }
+  });
+}());
+
 // Force a fresh load when the browser restores this page from bfcache
 // (prevents poem text appearing static/already-revealed on return from pillar page)
 window.addEventListener('pageshow', (e) => {

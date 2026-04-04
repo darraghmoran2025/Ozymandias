@@ -238,6 +238,21 @@ body.day h1 { color: #1a0c04; }
 
 body.day .attribution { color: #4a2e10; }
 
+#year {
+  cursor: pointer;
+  border-bottom: 1px solid rgba(106, 122, 148, 0.3);
+  transition: border-color 0.3s ease, color 0.3s ease;
+  letter-spacing: 0.06em;
+}
+#year:hover {
+  color: var(--text);
+  border-bottom-color: rgba(180, 210, 255, 0.6);
+}
+body.day #year:hover {
+  color: #1a0c04;
+  border-bottom-color: rgba(150, 80, 20, 0.5);
+}
+
 .wiki-link {
   color: inherit;
   text-decoration: none;
