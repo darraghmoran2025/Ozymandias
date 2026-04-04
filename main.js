@@ -270,14 +270,9 @@ let blowawayInProgress = false;
 function resetAndReveal() {
   cancelReveal();
   const container = document.getElementById('poem-container');
-  container.querySelectorAll('.poem-line').forEach(el => {
-    el.classList.remove('reveal');
-    el.style.animation  = '';
-    el.style.opacity    = '';
-    el.style.transform  = '';
-  });
-  void container.offsetHeight; // force reflow so CSS animations restart cleanly
-  animateLines(container);
+  container.innerHTML = ''; // destroy existing elements so no animation state carries over
+  lockedWrappers.clear();
+  buildPoem(); // fresh DOM + fresh stagger, identical to first load
 }
 
 function blowawayAndToggle() {
